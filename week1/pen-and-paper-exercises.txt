@@ -1,0 +1,19 @@
+Exercise 1.4
+
+1. 
+
+double 5
+ -> definition of double
+incr (incr 0)
+ -> definition of incr
+5 + (5 + 0)
+ -> definition of ( + )
+5 + 5
+ -> definition of +
+10
+
+2. 
+
+applicative order evaluation
+
+
