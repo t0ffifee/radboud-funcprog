@@ -102,3 +102,79 @@ caesar :: Int -> String -> String
 caesar n xs = map (\x -> shift n (toUpper x)) xs
 
 message = "ADMNO D HPNO NKMDIFGZ TJP RDOC AVDMT YPNO"
+
+reverse1 [] = []
+reverse1 (x:xs) = reverse xs ++ [x]
+
+reverse2 xs = rev xs []
+  where rev []      acc = acc
+        rev (y:ys)  acc = rev ys (y:acc)
+
+mydrop :: Int -> [a] -> [a]
+mydrop n [] = []
+mydrop 0 xs = xs
+mydrop n (x:xs) = mydrop (n-1) xs
+
+
+uniq :: String -> String
+uniq [] = []
+uniq [x] = [x]
+uniq (x:y:xs)
+  | x == y    = uniq (y:xs)
+  | otherwise = x : uniq (y:xs)
+
+removeAt :: Int -> [a] -> [a]
+removeAt n xs = [x | (i,x) <- zip [0..] xs, i /= n]
+
+compareTuples :: Ord a => (a, b) -> (a, b) -> Ordering
+compareTuples (a1, b1) (a2, b2) = compare a1 a2
+
+sortWithPos :: (Ord a) => [a] -> [(a, Int)]
+sortWithPos xs = sort (zip xs [0..])
+
+sortedPos :: (Ord a) => [a] -> [(a, Int)]
+sortedPos xs = [(x, i) | ((_,x),i) <- sortWithPos (map swap (sortWithPos xs))]
+  where swap (x,y) = (y,x)
+
+letterWords :: String -> [String] 
+letterWords []  = []
+letterWords (a:as) = case letterWords as of
+                       bs:rest | isLetter a -> (a:bs):rest 
+                       bs:rest | otherwise  -> []:[a]:bs:rest 
+                       []                   -> [[],[a]]
+
+jumble :: String -> String 
+jumble str
+  | length str <= 2 = str 
+  | otherwise       = [head str] ++ shuffle (init (tail str)) ++ [last str] 
+
+shuffle :: (Ord a) => [a] -> [a]
+shuffle xs = map snd (sort (zip [ x `mod` length xs | x<-[p,2*p..] ] xs))
+  where p = 37
+
+concatr :: [[a]] -> [a]
+concatr [] = []
+concatr (x:xs) = x ++ (concatr xs)
+
+count e = foldr (\x acc -> if e==x then acc+1 else acc) 0
+
+-- foldr (\elem acc -> <term>) <start_acc> <list>
+-- foldl (\acc elem -> <term>) <start_acc> <list>
+
+data Base = A | C | G | T
+  deriving (Eq, Ord, Show)
+
+type DNA = [Base]
+type Segment = [Base]
+
+elInList x (y:ys) = x == y || elInList x ys
+
+segment :: DNA
+segment = [C, A, A, T]
+
+exampleDNA :: DNA 
+exampleDNA = [A, T, G, T, A, A, A, G, G, G, T, C, C, A, A, T, G, A]
+
+contains :: Segment -> DNA -> Bool
+-- contains seg dna = elInList seg $ map (take $ length seg) $ tails dna
+contains segment dna = or [ segment `isPrefixOf` dna' | dna' <- tails dna]
