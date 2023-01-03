@@ -6,8 +6,8 @@ import Data.Maybe
 swap :: (Int, Int) -> (Int, Int)
 swap (a,b) = (b, a)
 
-group :: (Int, (Char, Bool)) -> (Int, Char, Bool)
-group (i, (c, b)) = (i, c, b)
+-- group :: (Int, (Char, Bool)) -> (Int, Char, Bool)
+-- group (i, (c, b)) = (i, c, b)
 
 foo x y
     | x == "" = y
@@ -176,5 +176,77 @@ exampleDNA :: DNA
 exampleDNA = [A, T, G, T, A, A, A, G, G, G, T, C, C, A, A, T, G, A]
 
 contains :: Segment -> DNA -> Bool
--- contains seg dna = elInList seg $ map (take $ length seg) $ tails dna
 contains segment dna = or [ segment `isPrefixOf` dna' | dna' <- tails dna]
+
+containsI :: Segment -> DNA -> [Int]
+containsI segment dna = [ i | (i, dna') <- zip [0..] (tails exampleDNA), segment `isPrefixOf` dna']
+
+longestOnlyAs :: DNA -> Int
+longestOnlyAs dna = maximum $ 0:[ length as | as@(A:_) <- group dna]
+
+data Tree a = Leaf | Node a (Tree a) (Tree a)
+
+treeExample = Node 3 (Node 2 (Node 1 Leaf Leaf) Leaf) (Node 5 (Node 4 Leaf Leaf) Leaf)
+
+leaves :: Tree a -> Int
+leaves Leaf = 1
+leaves (Node _ a b) = leaves a + leaves b
+
+nodes :: Tree a -> Int
+nodes Leaf = 0
+nodes (Node _ a b) = 1 + nodes a + nodes b
+
+height :: Tree a -> Int
+height Leaf = 0
+height (Node _ a b) = 1 + max (height a) (height b)
+
+isSearchTree :: (Ord a) => Tree a -> Bool
+isSearchTree Leaf = True
+isSearchTree (Node x lt rt) 
+  =  null [ l | l <- elems lt, not (l < x) ] 
+  && null [ r | r <- elems rt, not (x < r) ] 
+  && isSearchTree lt 
+  && isSearchTree rt
+
+elems :: Tree a -> [a]
+elems Leaf = []
+elems (Node x lt rt) = x : elems lt ++ elems rt
+
+member :: (Ord a) => a -> Tree a -> Bool
+member el Leaf = False
+member el (Node x lt rt)
+  | el < x    = member el lt
+  | el > x    = member el rt
+  | otherwise = True
+
+treeInsert :: (Ord a) => a -> Tree a -> Tree a 
+treeInsert el Leaf = Node el Leaf Leaf
+treeInsert el tree@(Node x lt rt)
+  | el < x  = Node x (treeInsert el lt) rt
+  | el > x  = Node x lt (treeInsert el rt)
+  | el == x = tree
+
+--a pretty printer
+layout :: (Show a) => Tree a -> String
+layout tree = go "" ("","","") tree
+  where
+  width = maximum (0:[ length (show e) | e <- elems tree ]) 
+  pad s = let s' = show s in replicate (width-length s') '-' ++ s' 
+  fill  = replicate width ' '
+
+  --go pre (_,_,preN) Leaf = pre ++ preN ++ "·\n" -- this explicitly draws the leaves
+  --go _   _          Leaf = ""                   -- this vertically compresses the tree 
+  go pre _          Leaf = pre ++ "\n"            -- use more vertical space, but don't draw leaves 
+  go pre (preR,preL,preN) (Node k lt rt)
+    = go (pre ++ preR) (hfill,v_bar,rbend) rt 
+      ++ (pre ++ preN) ++ pad k ++ junct ++
+      go (pre ++ preL) (v_bar,hfill,lbend) lt
+
+  junct = "┤\n"         -- change to "+\n" if no Unicode 
+  hfill = fill ++ "  " 
+  rbend = fill ++ "╭─"  -- change to "/-" if no Unicode 
+  v_bar = fill ++ "│ "  -- change to "| " if no Unicode 
+  lbend = fill ++ "╰─"  -- change to "\\-" if no Unicode 
+
+putTree :: (Show a) => Tree a -> IO() 
+putTree tree = putStr (layout tree)

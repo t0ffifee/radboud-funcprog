@@ -45,3 +45,8 @@ fromIntegral etc.
 filter
 not
 sum
+take
+drop
+dropWhile
+takeWhile
+group
