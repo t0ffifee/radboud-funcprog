@@ -185,6 +185,7 @@ longestOnlyAs :: DNA -> Int
 longestOnlyAs dna = maximum $ 0:[ length as | as@(A:_) <- group dna]
 
 data Tree a = Leaf | Node a (Tree a) (Tree a)
+  deriving Show
 
 treeExample = Node 3 (Node 2 (Node 1 Leaf Leaf) Leaf) (Node 5 (Node 4 Leaf Leaf) Leaf)
 
@@ -226,7 +227,57 @@ treeInsert el tree@(Node x lt rt)
   | el > x  = Node x lt (treeInsert el rt)
   | el == x = tree
 
---a pretty printer
+fromList :: (Ord a) => [a] -> Tree a
+fromList list = insertAll list Leaf
+  where insertAll []      tree  = tree
+        insertAll (x:xs)  tree  = insertAll xs (treeInsert x tree)
+
+inOrder :: Tree a -> [a]
+inOrder Leaf = []
+inOrder (Node x lt rt) = (inOrder lt) ++ [x] ++ (inOrder rt)
+
+{-
+gebalanceerde boom maken
+ - zoek het midden
+ - maak dat een node
+ - maak gebalanceerde boom links en rechts van deze node
+-}
+
+fromAscList :: [a] -> Tree a
+fromAscList [] = Leaf
+fromAscList xs = case splitAt (length xs `div` 2) xs of
+                    (lt, x:rt) -> Node x (fromAscList lt) (fromAscList rt)
+                    _        -> error "impossible case"
+
+
+
+{-
+breadth first
+ - hoe zorg je ervoor dat ik eerst de elementen terug krijg voordat ie verder gaat
+-}
+
+breadthFirst :: Tree a -> [a]
+breadthFirst tree = go [tree]
+  where go (Leaf:xs)      = go xs
+        go (Node x lt rt:xs) = x : go (xs ++ [lt, rt])
+        go [] = []
+
+rotateRight :: Tree a -> Tree a
+rotateRight Leaf = Leaf
+rotateRight (Node x (Node y left right) rightChild) = (Node y left (Node x right rightChild))
+
+rotateLeft :: Tree a -> Tree a
+rotateLeft Leaf = Leaf
+rotateLeft (Node x leftChild (Node y left right)) = (Node y (Node x leftChild left) right)
+
+rotateToRoot :: (Ord a) => a -> Tree a -> Tree a
+rotateToRoot x Leaf = Leaf
+rotateToRoot x tree@(Node y left right)
+  | x == y = tree
+  | x < y  = rotateRight $ Node y (rotateToRoot x left) right
+  | x > y  = rotateLeft  $ Node y left (rotateToRoot x right)
+
+--a pretty tree printer
 layout :: (Show a) => Tree a -> String
 layout tree = go "" ("","","") tree
   where
@@ -250,3 +301,36 @@ layout tree = go "" ("","","") tree
 
 putTree :: (Show a) => Tree a -> IO() 
 putTree tree = putStr (layout tree)
+
+data Expr = Lit Integer | Expr :+: Expr | Expr :-: Expr | Expr :*: Expr | Expr :/: Expr | Var
+infixl 6 :+: 
+infixl 6 :-: 
+infixl 7 :/:
+infixl 7 :*:
+
+eval :: (Fractional a, Eq a) => Expr -> a -> Maybe a 
+eval (Lit k) _ = Just (fromInteger k) 
+eval (x :+: y) k = case (eval x k, eval y k) of 
+                     (Just x', Just y') -> Just (x'+y')
+                     _ -> Nothing
+                       
+eval (x :-: y) k = case (eval x k, eval y k) of 
+                     (Just x', Just y') -> Just (x'-y')
+                     _ -> Nothing
+
+eval (x :*: y) k = case (eval x k, eval y k) of
+                     (Just x', Just y') -> Just (x'*y') 
+                     _ -> Nothing 
+
+eval (x :/: y) k = case (eval x k, eval y k) of 
+                     (Just x', Just 0)  -> Nothing
+                     (Just x', Just y') -> Just (x'/y') 
+                     _ -> Nothing
+
+eval Var k = Just k
+
+onlyOnce :: (a->Bool) -> [a] -> Bool
+onlyOnce predicate xs = (length $ filter predicate xs) == 1 
+
+onlyElem :: (Eq a) => a -> [a] -> Bool
+onlyElem a xs = onlyOnce (==a) xs
