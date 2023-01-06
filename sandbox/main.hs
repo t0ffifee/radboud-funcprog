@@ -334,3 +334,21 @@ onlyOnce predicate xs = (length $ filter predicate xs) == 1
 
 onlyElem :: (Eq a) => a -> [a] -> Bool
 onlyElem a xs = onlyOnce (==a) xs
+
+all' :: (a -> Bool) -> [a] -> Bool
+all' f xs = not (any (\x -> (f x))) xs
+
+foldAnd :: [Bool] -> Bool
+foldAnd xs = foldr (&&) True xs
+
+foldFor :: [Bool] -> Bool
+foldFor xs = foldr (||) False xs
+
+foldElem :: (Eq a) => a -> [a] -> Bool
+foldElem x xs = foldl (==x) False xs
+
+foldMaximum :: (Ord a) => [a] -> a
+foldMaximum [] = error "no maximum in empty list"
+foldMaximum xs = foldr max 0 xs
+
+foldFromList
